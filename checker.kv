@@ -1,0 +1,54 @@
+<CheckerScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+        padding: 10
+        spacing: 5
+        GridLayout:
+            cols: 2
+            size_hint_y: 0.2
+            Label:
+                text: 'Hits:'
+            Label:
+                text: str(root.hits)
+            Label:
+                text: 'Valid:'
+            Label:
+                text: str(root.valid)
+            Label:
+                text: 'Dead:'
+            Label:
+                text: str(root.dead)
+            Label:
+                text: 'Errors:'
+            Label:
+                text: str(root.errors)
+            Label:
+                text: 'Checked:'
+            Label:
+                text: str(root.checked)
+            Label:
+                text: 'CPM:'
+            Label:
+                text: f'{root.cpm:.1f}'
+        ScrollView:
+            size_hint_y: 0.7
+            Label:
+                text: root.log_text
+                text_size: self.width, None
+                size_hint_y: None
+                height: self.texture_size[1]
+        BoxLayout:
+            size_hint_y: 0.1
+            spacing: 10
+            Button:
+                text: 'Start'
+                on_release: root.start_check()
+            Button:
+                text: 'Stop'
+                on_release: root.stop_check()
+            Button:
+                text: 'Results'
+                on_release: root.go_results()
+            Button:
+                text: 'Back'
+                on_release: app.root.current = 'main'

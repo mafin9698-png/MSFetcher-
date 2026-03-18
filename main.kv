@@ -1,0 +1,18 @@
+<MainScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+        padding: 20
+        spacing: 15
+        Label:
+            text: 'MS FETCHER v2.0'
+            font_size: 36
+            size_hint_y: 0.2
+        Button:
+            text: '🚀 Microsoft Checker'
+            on_release: app.root.current = 'combo'
+        Button:
+            text: '⚙️ Settings'
+            on_release: app.root.current = 'settings'
+        Button:
+            text: '📊 Results'
+            on_release: app.root.current = 'results'

@@ -1,0 +1,75 @@
+<SettingsScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+        padding: 20
+        spacing: 10
+        ScrollView:
+            Label:
+                text_size: self.width, None
+                size_hint_y: None
+                height: self.minimum_height
+                markup: True
+                text:
+                    '[b]Proxy:[/b] ' + root.proxy_info + '\n\n' +
+                    '[b]Checker Threads[/b]'
+        TextInput:
+            text: str(root.threads)
+            multiline: False
+            input_filter: 'int'
+            on_text: root.threads = self.text
+        CheckBox:
+            active: root.minecraft
+            on_active: root.minecraft = self.active
+        Label:
+            text: 'Enable Minecraft Check'
+        CheckBox:
+            active: root.full_capture
+            on_active: root.full_capture = self.active
+        Label:
+            text: 'Full Capture (cards, subs)'
+        CheckBox:
+            active: root.hypixel
+            on_active: root.hypixel = self.active
+        Label:
+            text: 'Enable Hypixel Stats'
+        CheckBox:
+            active: root.promo
+            on_active: root.promo = self.active
+        Label:
+            text: 'Enable Promo Puller'
+        Label:
+            text: 'Discord Webhooks:'
+        TextInput:
+            text: root.webhook_mc
+            hint_text: 'Minecraft Webhook'
+            on_text: root.webhook_mc = self.text
+        TextInput:
+            text: root.webhook_promo
+            hint_text: 'Promo Webhook'
+            on_text: root.webhook_promo = self.text
+        TextInput:
+            text: root.webhook_code
+            hint_text: 'Gift Code Webhook'
+            on_text: root.webhook_code = self.text
+        TextInput:
+            text: root.webhook_paypal
+            hint_text: 'PayPal Webhook'
+            on_text: root.webhook_paypal = self.text
+        TextInput:
+            text: root.webhook_cc
+            hint_text: 'Credit Card Webhook'
+            on_text: root.webhook_cc = self.text
+        TextInput:
+            text: root.webhook_subs
+            hint_text: 'Subscriptions Webhook'
+            on_text: root.webhook_subs = self.text
+        TextInput:
+            text: root.webhook_rewards
+            hint_text: 'Rewards Webhook'
+            on_text: root.webhook_rewards = self.text
+        Button:
+            text: 'Save Settings'
+            on_release: root.save()
+        Button:
+            text: 'Back'
+            on_release: app.root.current = 'main'
