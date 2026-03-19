@@ -34,18 +34,21 @@ jobs:
           pip install --user cython buildozer
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Build with Buildozer (and fix autotools)
+      - name: First build (to unpack sources, will fail – that's OK)
+        continue-on-error: true
         run: |
-          # First, let buildozer download and unpack everything
-          buildozer android debug || true   # Ignore failure, we'll fix and retry
-          
-          # Find any configure.ac that needs autoreconf
+          buildozer android debug
+
+      - name: 🔧 Fix autotools macros in all downloaded libraries
+        run: |
+          # Find every configure.ac and run autoreconf to regenerate
           find .buildozer -name "configure.ac" -exec dirname {} \; | while read dir; do
-            echo "Running autoreconf -fi in $dir"
+            echo "🔄 Running autoreconf -fi in $dir"
             (cd "$dir" && autoreconf -fi)
           done
-          
-          # Now run the actual build again
+
+      - name: 🚀 Final build (should succeed)
+        run: |
           buildozer -v android debug
 
       - name: Upload APK
