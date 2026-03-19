@@ -24,18 +24,28 @@ jobs:
             git zip unzip \
             openjdk-17-jdk \
             python3-pip \
-            autoconf libtool pkg-config \
+            autoconf libtool-bin pkg-config \
             zlib1g-dev libncurses-dev libtinfo-dev \
             cmake libffi-dev libssl-dev \
-            autoconf-archive
+            autoconf-archive gettext
 
       - name: Install Buildozer
         run: |
           pip install --user cython buildozer
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Build with Buildozer
+      - name: Build with Buildozer (and fix autotools)
         run: |
+          # First, let buildozer download and unpack everything
+          buildozer android debug || true   # Ignore failure, we'll fix and retry
+          
+          # Find any configure.ac that needs autoreconf
+          find .buildozer -name "configure.ac" -exec dirname {} \; | while read dir; do
+            echo "Running autoreconf -fi in $dir"
+            (cd "$dir" && autoreconf -fi)
+          done
+          
+          # Now run the actual build again
           buildozer -v android debug
 
       - name: Upload APK
