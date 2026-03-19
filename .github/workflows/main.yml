@@ -39,38 +39,30 @@ jobs:
         run: |
           buildozer android debug
 
-      - name: 🔧 Aggressive Autotools Repair
+      - name: 🔧 Aggressive Autotools Repair (resilient)
         run: |
           # Find all configure.ac/configure.in files
           find .buildozer -type f \( -name "configure.ac" -o -name "configure.in" \) -exec dirname {} \; | sort -u | while read dir; do
             echo "🛠️ Repairing $dir"
-            cd "$dir"
-            
-            # 1. Add missing macro definitions if not present
-            if ! grep -q "LT_SYS_SYMBOL_USCORE" configure.* 2>/dev/null; then
-              # Insert after AC_INIT or at top
-              sed -i '/^AC_INIT/a m4_pattern_allow([LT_SYS_SYMBOL_USCORE])' configure.ac 2>/dev/null || true
-            fi
-            
-            # 2. Add LT_INIT if missing
-            if ! grep -q "LT_INIT" configure.* 2>/dev/null; then
-              sed -i '/^AC_INIT/a LT_INIT' configure.ac 2>/dev/null || true
-            fi
-            
-            # 3. Fix AC_REQUIRE errors (move inside AC_DEFUN if needed – simplified: comment out the line)
-            # This is a blunt fix – uncomment if needed
-            # sed -i '/AC_REQUIRE/s/^/#/' configure.ac
-            
-            # 4. Run autoupdate to modernise macros
-            autoupdate 2>/dev/null || true
-            
-            # 5. Run autoreconf to regenerate everything
-            autoreconf -fi
-            
-            cd -
+            # Use a subshell so failures in one dir don't stop the loop
+            (
+              cd "$dir" || exit
+              # 1. Add missing macro definitions if not present
+              if ! grep -q "LT_SYS_SYMBOL_USCORE" configure.* 2>/dev/null; then
+                sed -i '/^AC_INIT/a m4_pattern_allow([LT_SYS_SYMBOL_USCORE])' configure.ac 2>/dev/null || true
+              fi
+              # 2. Add LT_INIT if missing
+              if ! grep -q "LT_INIT" configure.* 2>/dev/null; then
+                sed -i '/^AC_INIT/a LT_INIT' configure.ac 2>/dev/null || true
+              fi
+              # 3. Run autoupdate to modernise macros
+              autoupdate 2>/dev/null || true
+              # 4. Run autoreconf – allow failure (some dirs may have issues)
+              autoreconf -fi || true
+            )
           done
 
-          # 6. Handle gtk-doc.make separately
+          # 5. Handle gtk-doc.make separately
           find .buildozer -name "Makefile.am" -exec grep -l "gtk-doc.make" {} \; | while read am; do
             d=$(dirname "$am")
             if [ ! -f "$d/gtk-doc.make" ]; then
