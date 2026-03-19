@@ -17,7 +17,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install system dependencies
+      - name: Install system dependencies (including gtk-doc-tools)
         run: |
           sudo apt update
           sudo apt install -y \
@@ -27,7 +27,7 @@ jobs:
             autoconf libtool-bin pkg-config \
             zlib1g-dev libncurses-dev libtinfo-dev \
             cmake libffi-dev libssl-dev \
-            autoconf-archive gettext
+            autoconf-archive gettext gtk-doc-tools
 
       - name: Install Buildozer
         run: |
@@ -39,12 +39,32 @@ jobs:
         run: |
           buildozer android debug
 
-      - name: 🔧 Fix autotools macros in all downloaded libraries
+      - name: 🔧 Comprehensive Autotools Fix
         run: |
-          # Find every configure.ac and run autoreconf to regenerate
-          find .buildozer -name "configure.ac" -exec dirname {} \; | while read dir; do
-            echo "🔄 Running autoreconf -fi in $dir"
-            (cd "$dir" && autoreconf -fi)
+          # Find every directory containing configure.ac or configure.in
+          find .buildozer -type f \( -name "configure.ac" -o -name "configure.in" \) -exec dirname {} \; | while read dir; do
+            echo "🔄 Processing $dir"
+            cd "$dir"
+            
+            # Add missing macro if needed (create a simple configure.ac if it's completely broken)
+            if ! grep -q "LT_INIT" configure.* 2>/dev/null; then
+              echo "LT_INIT" >> configure.ac
+            fi
+            
+            # Run autoupdate to fix deprecated macros
+            autoupdate 2>/dev/null || true
+            
+            # Run autoreconf to generate everything
+            autoreconf -fi
+            
+            cd -
+          done
+          
+          # Specifically handle gtk-doc if it's causing issues
+          find .buildozer -name "gtk-doc.make" -exec dirname {} \; | while read dir; do
+            if [ ! -f "$dir/gtk-doc.make" ]; then
+              wget -q https://gitlab.gnome.org/GNOME/gtk-doc/-/raw/main/data/gtk-doc.make -O "$dir/gtk-doc.make"
+            fi
           done
 
       - name: 🚀 Final build (should succeed)
