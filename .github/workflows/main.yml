@@ -34,36 +34,47 @@ jobs:
           pip install --user cython buildozer
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: First build (to unpack sources, will fail – that's OK)
+      - name: First build (unpack sources, will fail – that's OK)
         continue-on-error: true
         run: |
           buildozer android debug
 
-      - name: 🔧 Comprehensive Autotools Fix
+      - name: 🔧 Aggressive Autotools Repair
         run: |
-          # Find every directory containing configure.ac or configure.in
-          find .buildozer -type f \( -name "configure.ac" -o -name "configure.in" \) -exec dirname {} \; | while read dir; do
-            echo "🔄 Processing $dir"
+          # Find all configure.ac/configure.in files
+          find .buildozer -type f \( -name "configure.ac" -o -name "configure.in" \) -exec dirname {} \; | sort -u | while read dir; do
+            echo "🛠️ Repairing $dir"
             cd "$dir"
             
-            # Add missing macro if needed (create a simple configure.ac if it's completely broken)
-            if ! grep -q "LT_INIT" configure.* 2>/dev/null; then
-              echo "LT_INIT" >> configure.ac
+            # 1. Add missing macro definitions if not present
+            if ! grep -q "LT_SYS_SYMBOL_USCORE" configure.* 2>/dev/null; then
+              # Insert after AC_INIT or at top
+              sed -i '/^AC_INIT/a m4_pattern_allow([LT_SYS_SYMBOL_USCORE])' configure.ac 2>/dev/null || true
             fi
             
-            # Run autoupdate to fix deprecated macros
+            # 2. Add LT_INIT if missing
+            if ! grep -q "LT_INIT" configure.* 2>/dev/null; then
+              sed -i '/^AC_INIT/a LT_INIT' configure.ac 2>/dev/null || true
+            fi
+            
+            # 3. Fix AC_REQUIRE errors (move inside AC_DEFUN if needed – simplified: comment out the line)
+            # This is a blunt fix – uncomment if needed
+            # sed -i '/AC_REQUIRE/s/^/#/' configure.ac
+            
+            # 4. Run autoupdate to modernise macros
             autoupdate 2>/dev/null || true
             
-            # Run autoreconf to generate everything
+            # 5. Run autoreconf to regenerate everything
             autoreconf -fi
             
             cd -
           done
-          
-          # Specifically handle gtk-doc if it's causing issues
-          find .buildozer -name "gtk-doc.make" -exec dirname {} \; | while read dir; do
-            if [ ! -f "$dir/gtk-doc.make" ]; then
-              wget -q https://gitlab.gnome.org/GNOME/gtk-doc/-/raw/main/data/gtk-doc.make -O "$dir/gtk-doc.make"
+
+          # 6. Handle gtk-doc.make separately
+          find .buildozer -name "Makefile.am" -exec grep -l "gtk-doc.make" {} \; | while read am; do
+            d=$(dirname "$am")
+            if [ ! -f "$d/gtk-doc.make" ]; then
+              wget -q https://gitlab.gnome.org/GNOME/gtk-doc/-/raw/main/data/gtk-doc.make -O "$d/gtk-doc.make"
             fi
           done
 
