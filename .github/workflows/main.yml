@@ -3,28 +3,43 @@ name: Build APK
 on:
   push:
     branches: [ "main" ]
+  workflow_dispatch:  # allows manual trigger
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y python3-pip zip unzip openjdk-17-jdk git
-        pip install --upgrade pip
-        pip install buildozer cython
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-    - name: Build APK
-      run: |
-        buildozer android debug
+      - name: Install system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            git zip unzip \
+            openjdk-17-jdk \
+            python3-pip \
+            autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
+            cmake libffi-dev libssl-dev \
+            autoconf-archive
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: apk
-        path: bin/*.apk
+      - name: Install Buildozer
+        run: |
+          pip install --user cython buildozer
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Build with Buildozer
+        run: |
+          buildozer -v android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: msfetcher-apk
+          path: bin/*.apk
